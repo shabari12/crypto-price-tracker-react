@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useCallback } from "react";
 
 export const CoinContext = createContext();
 
@@ -9,7 +9,7 @@ const CoinContextProvider = (props) => {
     symbol: "$",
   });
 
-  const fetchAllCoin = async () => {
+  const fetchAllCoin = useCallback(async () => {
     const options = {
       method: "GET",
       headers: {
@@ -23,16 +23,25 @@ const CoinContextProvider = (props) => {
         `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currency.name}`,
         options
       );
+      if (!response.ok) {
+        throw new Error("Failed to fetch coin data");
+      }
       const data = await response.json();
       setAllCoin(data);
     } catch (err) {
       console.error(err);
+      // Handle error state or retries as needed
     }
-  };
+  }, [currency]);
 
   useEffect(() => {
-    fetchAllCoin();
-  }, [currency]);
+    const fetchData = async () => {
+      await fetchAllCoin();
+    };
+    fetchData();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currency, fetchAllCoin]); // Include fetchAllCoin in the dependency array
 
   const contextValue = {
     allCoin,
